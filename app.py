@@ -120,30 +120,10 @@ if st.button(
                 expanded=True,
             ) as status:
 
-                # BƯỚC 1: IMPORT
-                st.write("📦 Đang nạp module CrewAI...")
-
-                st.write("🔎 Kiểm tra import crewai...")
-                import crewai
-                st.write("✅ Import crewai thành công.")
-
-                st.write("🔎 Kiểm tra import crewai_tools...")
-                import crewai_tools
-                st.write("✅ Import crewai_tools thành công.")
-
-                st.write("🔎 Kiểm tra import crew.agents...")
-                import crew.agents
-                st.write("✅ Import crew.agents thành công.")
-
-                st.write("🔎 Kiểm tra import crew.tasks...")
-                import crew.tasks
-                st.write("✅ Import crew.tasks thành công.")
-
-                st.write("🔎 Kiểm tra import crew.crew...")
+                # BƯỚC 1: NẠP CREWAI
                 from crew.crew import create_news_crew
-                st.write("✅ Import crew.crew thành công.")
 
-                st.write("✅ Nạp module CrewAI thành công.")
+                st.write("✅ Đã nạp module CrewAI.")
 
                 # BƯỚC 2: KHỞI TẠO PIPELINE
                 status.update(
@@ -162,13 +142,12 @@ if st.button(
 
                 # BƯỚC 3: CHẠY CREWAI
                 status.update(
-                    label="CrewAI đang thực thi quy trình...",
+                    label="CrewAI đang nghiên cứu và biên tập...",
                     state="running",
                 )
 
                 st.write(
-                    "🔍 Đang gọi pipeline.kickoff(). "
-                    "Hệ thống sẽ lần lượt thực hiện các Agent."
+                    "🔍 Researcher, Writer và Critic đang thực hiện nhiệm vụ."
                 )
 
                 result = pipeline.kickoff()
