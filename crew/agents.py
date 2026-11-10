@@ -5,11 +5,12 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # Tavily returns up to 20 search results per search call.
-tavily_tool = TavilySearchTool(
-    search_depth="basic",
-    topic="news",
-    max_results=20,
-)
+def create_tavily_tool():
+    return TavilySearchTool(
+        search_depth="basic",
+        topic="news",
+        max_results=20,
+    )
 
 
 def create_researcher_agent():
@@ -27,7 +28,7 @@ def create_researcher_agent():
             "Bạn không bịa tiêu đề, ngày đăng, URL, số liệu hoặc nội dung bài báo."
         ),
         llm="openai/gpt-4o-mini",
-        tools=[tavily_tool],
+        tools=[create_tavily_tool()],
         verbose=True,
         allow_delegation=False,
         max_iter=5,
