@@ -19,10 +19,8 @@ st.set_page_config(
 # 2. NẠP API KEYS
 # =========================================================
 
-# Chạy local: đọc API keys từ file .env
 load_dotenv(override=True)
 
-# Chạy Streamlit Cloud: đọc API keys từ Secrets
 try:
     for key in ["OPENAI_API_KEY", "TAVILY_API_KEY"]:
         if key in st.secrets:
@@ -36,17 +34,14 @@ except st.errors.StreamlitSecretNotFoundError:
 # 3. KHỞI TẠO SESSION STATE
 # =========================================================
 
-if "report" not in st.session_state:
-    st.session_state.report = ""
-
-if "critic_status" not in st.session_state:
-    st.session_state.critic_status = ""
-
-if "critic_feedback" not in st.session_state:
-    st.session_state.critic_feedback = ""
-
-if "error_message" not in st.session_state:
-    st.session_state.error_message = ""
+for key, default in {
+    "report": "",
+    "critic_status": "",
+    "critic_feedback": "",
+    "error_message": "",
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 
 # =========================================================
@@ -63,15 +58,11 @@ st.divider()
 
 st.header("Thiết lập nghiên cứu")
 
-
-# Nhập chủ đề
 topic = st.text_input(
     "Chủ đề muốn nghiên cứu",
     placeholder="Ví dụ: Những ứng dụng AI mới nhất",
 )
 
-
-# Chọn lĩnh vực
 categories = st.multiselect(
     "Lĩnh vực công nghệ",
     options=[
@@ -84,20 +75,17 @@ categories = st.multiselect(
     default=["Trí tuệ nhân tạo (AI)"],
 )
 
-
-# Chọn số lượng tin
 number_of_news = st.selectbox(
     "Số lượng tin mong muốn",
     options=[5, 10, 15, 20],
     index=0,
 )
 
-
 st.divider()
 
 
 # =========================================================
-# 5. XỬ LÝ NÚT BẮT ĐẦU NGHIÊN CỨU
+# 5. XỬ LÝ NGHIÊN CỨU
 # =========================================================
 
 if st.button(
@@ -106,7 +94,6 @@ if st.button(
     use_container_width=True,
 ):
 
-    # Kiểm tra dữ liệu đầu vào
     if not topic.strip():
         st.warning("Vui lòng nhập chủ đề nghiên cứu.")
 
@@ -115,53 +102,70 @@ if st.button(
 
     else:
 
-        # Xóa kết quả và lỗi của lần chạy trước
         st.session_state.report = ""
         st.session_state.critic_status = ""
         st.session_state.critic_feedback = ""
         st.session_state.error_message = ""
 
-        # Chuẩn bị chủ đề nghiên cứu
         research_topic = (
             f"Chủ đề: {topic.strip()}. "
             f"Các lĩnh vực cần ưu tiên: {', '.join(categories)}."
         )
 
-        # Thông báo ngay khi nhận yêu cầu
-        st.info(
-            "Đã nhận yêu cầu nghiên cứu. "
-            "Hệ thống đang chuẩn bị khởi động các Agent..."
-        )
+        status = None
 
         try:
 
-            # Spinner bao gồm cả quá trình import và chạy CrewAI
-            with st.spinner(
-                "⏳ Các Agent đang nghiên cứu và biên tập tin tức. "
-                "Vui lòng chờ..."
-            ):
+            with st.status(
+                "Đang chuẩn bị khởi động hệ thống...",
+                expanded=True,
+            ) as status:
 
-                # Import CrewAI khi người dùng bấm nút
+                # BƯỚC 1: IMPORT
+                st.write("📦 Đang nạp module CrewAI...")
+
                 from crew.crew import create_news_crew
 
-                # Khởi chạy quy trình nghiên cứu
+                st.write("✅ Nạp module CrewAI thành công.")
+
+                # BƯỚC 2: KHỞI TẠO PIPELINE
+                status.update(
+                    label="Đang khởi tạo quy trình nghiên cứu...",
+                    state="running",
+                )
+
+                st.write("⚙️ Đang khởi tạo các Agent và Task...")
+
                 pipeline = create_news_crew(
                     topic=research_topic,
                     number_of_news=number_of_news,
                 )
 
+                st.write("✅ Khởi tạo quy trình thành công.")
+
+                # BƯỚC 3: CHẠY CREWAI
+                status.update(
+                    label="CrewAI đang thực thi quy trình...",
+                    state="running",
+                )
+
+                st.write(
+                    "🔍 Đang gọi pipeline.kickoff(). "
+                    "Hệ thống sẽ lần lượt thực hiện các Agent."
+                )
+
                 result = pipeline.kickoff()
 
-            # Lưu kết quả
+                # BƯỚC 4: HOÀN THÀNH
+                status.update(
+                    label="Nghiên cứu và biên tập hoàn tất!",
+                    state="complete",
+                    expanded=False,
+                )
+
             st.session_state.report = result.raw
-
-            st.session_state.critic_status = (
-                result.critic_status
-            )
-
-            st.session_state.critic_feedback = (
-                result.critic_feedback
-            )
+            st.session_state.critic_status = result.critic_status
+            st.session_state.critic_feedback = result.critic_feedback
 
             if not st.session_state.report:
                 st.warning(
@@ -173,13 +177,16 @@ if st.button(
 
         except Exception as exc:
 
-            # Lưu lỗi để hiển thị
             st.session_state.error_message = str(exc)
 
-            st.error(
-                "Không thể hoàn thành quy trình nghiên cứu."
-            )
+            if status is not None:
+                status.update(
+                    label="Quy trình gặp lỗi!",
+                    state="error",
+                    expanded=True,
+                )
 
+            st.error("Không thể hoàn thành quy trình nghiên cứu.")
             st.exception(exc)
 
 
@@ -190,9 +197,7 @@ if st.button(
 if st.session_state.error_message:
 
     st.divider()
-
     st.subheader("Thông tin lỗi")
-
     st.error(st.session_state.error_message)
 
 
@@ -203,14 +208,11 @@ if st.session_state.error_message:
 if st.session_state.critic_status:
 
     st.divider()
-
     st.subheader("🔍 Trạng thái kiểm duyệt")
 
     if st.session_state.critic_status == "DAT":
 
-        st.success(
-            "Báo cáo đã đạt yêu cầu kiểm duyệt."
-        )
+        st.success("Báo cáo đã đạt yêu cầu kiểm duyệt.")
 
     elif st.session_state.critic_status == "CHUA_DAT":
 
@@ -226,10 +228,7 @@ if st.session_state.critic_status:
         )
 
     with st.expander("Xem phản hồi của Critic"):
-
-        st.markdown(
-            st.session_state.critic_feedback
-        )
+        st.markdown(st.session_state.critic_feedback)
 
 
 # =========================================================
@@ -239,22 +238,15 @@ if st.session_state.critic_status:
 if st.session_state.report:
 
     st.divider()
-
     st.header("📄 Báo cáo tin tức")
-
-    st.markdown(
-        st.session_state.report
-    )
+    st.markdown(st.session_state.report)
 
 
 # =========================================================
 # 9. NÚT XÓA KẾT QUẢ
 # =========================================================
 
-if (
-    st.session_state.report
-    or st.session_state.error_message
-):
+if st.session_state.report or st.session_state.error_message:
 
     if st.button("🗑️ Xóa kết quả"):
 
