@@ -123,7 +123,25 @@ if st.button(
                 # BƯỚC 1: IMPORT
                 st.write("📦 Đang nạp module CrewAI...")
 
+                st.write("🔎 Kiểm tra import crewai...")
+                import crewai
+                st.write("✅ Import crewai thành công.")
+
+                st.write("🔎 Kiểm tra import crewai_tools...")
+                import crewai_tools
+                st.write("✅ Import crewai_tools thành công.")
+
+                st.write("🔎 Kiểm tra import crew.agents...")
+                import crew.agents
+                st.write("✅ Import crew.agents thành công.")
+
+                st.write("🔎 Kiểm tra import crew.tasks...")
+                import crew.tasks
+                st.write("✅ Import crew.tasks thành công.")
+
+                st.write("🔎 Kiểm tra import crew.crew...")
                 from crew.crew import create_news_crew
+                st.write("✅ Import crew.crew thành công.")
 
                 st.write("✅ Nạp module CrewAI thành công.")
 
