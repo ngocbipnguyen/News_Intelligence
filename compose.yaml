@@ -1,0 +1,20 @@
+services:
+  streamlit:
+    image: technology-news-intelligence
+    container_name: tni-streamlit-compose
+    command: ["streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    ports:
+      - "127.0.0.1:8502:8501"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  api:
+    image: technology-news-intelligence
+    container_name: tni-api-compose
+    command: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:8001:8000"
+    env_file:
+      - .env
+    restart: unless-stopped
